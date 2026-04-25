@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Vehicle Security System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #07090f;
+      --surface: #0d1117;
+      --card: #111827;
+      --border: #1e2d45;
+      --accent: #00c6ff;
+      --accent2: #0072ff;
+      --safe: #00e676;
+      --danger: #ff1744;
+      --warning: #ffab00;
+      --text: #e8eaf6;
+      --muted: #6b7a99;
+      --header-h: 68px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Exo 2', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID LINES BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,198,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,198,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LOGIN ── */
+    #login {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; justify-content: center; align-items: center;
+      background: radial-gradient(ellipse at 60% 40%, #0d1f3c 0%, #07090f 70%);
+    }
+
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 380px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,198,255,.12), 0 24px 60px rgba(0,0,0,.6);
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .login-logo {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-bottom: 8px;
+    }
+
+    .login-logo svg { filter: drop-shadow(0 0 8px rgba(0,198,255,.6)); }
+
+    .login-brand {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px; font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--accent), #fff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .login-subtitle {
+      text-align: center; color: var(--muted);
+      font-size: 12px; letter-spacing: 3px;
+      text-transform: uppercase; margin-bottom: 36px;
+    }
+
+    .field-group { margin-bottom: 16px; }
+    .field-group label {
+      display: block; font-size: 11px;
+      letter-spacing: 2px; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+
+    .field-group input {
+      width: 100%; padding: 12px 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text); font-family: 'Exo 2', sans-serif;
+      font-size: 14px; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,198,255,.12);
+    }
+
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border: none; border-radius: 8px;
+      color: #fff; font-family: 'Rajdhani', sans-serif;
+      font-size: 16px; font-weight: 700;
+      letter-spacing: 3px; cursor: pointer;
+      margin-top: 8px;
+      transition: opacity .2s, transform .1s;
+    }
+
+    .btn-login:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+
+    #error {
+      color: var(--danger); font-size: 12px;
+      text-align: center; margin-top: 12px; min-height: 18px;
+    }
+
+    /* ── APP SHELL ── */
+    #app { display: none; position: relative; z-index: 1; }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      height: var(--header-h);
+      background: rgba(13,17,23,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 20px;
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    /* Hamburger */
+    .hamburger {
+      width: 36px; height: 36px;
+      display: flex; flex-direction: column;
+      justify-content: center; gap: 6px;
+      cursor: pointer; padding: 6px;
+      border-radius: 6px;
+      transition: background .2s;
+    }
+    .hamburger:hover { background: rgba(255,255,255,.06); }
+    .hamburger span {
+      display: block; height: 2px; border-radius: 2px;
+      background: var(--text);
+      transition: transform .3s, opacity .3s, width .3s;
+    }
+    .hamburger span:nth-child(2) { width: 65%; }
+    .hamburger.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+    /* Brand */
+    .nav-brand {
+      display: flex; align-items: center; gap: 12px; flex: 1;
+    }
+    .nav-logo svg { filter: drop-shadow(0 0 6px rgba(0,198,255,.5)); }
+    .nav-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 18px; font-weight: 700;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), #fff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Status pill */
+    .nav-status {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .pulse {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--safe);
+      box-shadow: 0 0 0 0 rgba(0,230,118,.5);
+      animation: pulse 2s infinite;
+    }
+    .pulse.alert { background: var(--danger); box-shadow: 0 0 0 0 rgba(255,23,68,.5); }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,230,118,.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(0,230,118,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,230,118,0); }
+    }
+
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+
+    .nav-time {
+      font-size: 13px; color: var(--muted);
+      letter-spacing: 1px; font-variant-numeric: tabular-nums;
+    }
+
+    .btn-logout {
+      padding: 7px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted); font-family: 'Exo 2', sans-serif;
+      font-size: 12px; letter-spacing: 1px;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-logout:hover {
+      border-color: var(--danger); color: var(--danger);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      position: fixed;
+      top: var(--header-h); left: 0;
+      width: 240px; height: calc(100vh - var(--header-h));
+      background: rgba(13,17,23,.98);
+      border-right: 1px solid var(--border);
+      transform: translateX(-100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      z-index: 90; padding: 24px 0;
+      display: flex; flex-direction: column;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-section {
+      padding: 0 16px 8px;
+      font-size: 10px; letter-spacing: 3px;
+      color: var(--muted); text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; cursor: pointer;
+      font-size: 14px; color: var(--muted);
+      border-left: 3px solid transparent;
+      transition: all .2s;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(0,198,255,.06);
+      color: var(--text);
+      border-left-color: var(--accent);
+    }
+    .nav-item svg { flex-shrink: 0; }
+
+    .sidebar-divider {
+      height: 1px; background: var(--border);
+      margin: 12px 16px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px 20px;
+      font-size: 11px; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Overlay */
+    .overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 89;
+    }
+    .overlay.show { display: block; }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      padding: 28px 28px;
+      transition: margin-left .3s;
+    }
+
+    /* Sub-header */
+    .page-header {
+      margin-bottom: 28px;
+    }
+    .page-header h2 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 26px; font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .page-header p {
+      color: var(--muted); font-size: 13px;
+      margin-top: 4px; letter-spacing: .5px;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 60px; height: 60px;
+      background: radial-gradient(circle, rgba(0,198,255,.1) 0%, transparent 70%);
+    }
+    .stat-label {
+      font-size: 11px; letter-spacing: 2px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 30px; font-weight: 700; line-height: 1;
+    }
+    .stat-value.green { color: var(--safe); }
+    .stat-value.red   { color: var(--danger); }
+    .stat-value.blue  { color: var(--accent); }
+    .stat-value.gold  { color: var(--warning); }
+
+    .stat-badge {
+      display: inline-block; margin-top: 8px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; letter-spacing: 1px;
+    }
+    .stat-badge.up   { background: rgba(0,230,118,.12); color: var(--safe); }
+    .stat-badge.down { background: rgba(255,23,68,.12); color: var(--danger); }
+    .stat-badge.neu  { background: rgba(0,198,255,.12); color: var(--accent); }
+
+    /* ── GRID ── */
+    .grid-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto;
+      gap: 20px;
+    }
+
+    @media(max-width: 900px) {
+      .grid-main { grid-template-columns: 1fr 1fr; }
+    }
+    @media(max-width: 600px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      position: relative; overflow: hidden;
+    }
+
+    .card-label {
+      font-size: 10px; letter-spacing: 3px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-label svg { color: var(--accent); }
+
+    /* Status card */
+    .status-card { grid-column: span 1; }
+    .big-status {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 36px; font-weight: 700;
+      letter-spacing: 3px;
+      transition: color .3s;
+    }
+    .big-status.safe   { color: var(--safe); text-shadow: 0 0 20px rgba(0,230,118,.4); }
+    .big-status.danger { color: var(--danger); text-shadow: 0 0 20px rgba(255,23,68,.4); }
+    .status-desc { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+    /* Controls */
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+    .btn {
+      flex: 1; min-width: 110px; padding: 12px 8px;
+      border: none; border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: 2px; cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-safe {
+      background: rgba(0,230,118,.12);
+      color: var(--safe); border: 1px solid rgba(0,230,118,.3);
+    }
+    .btn-safe:hover {
+      background: rgba(0,230,118,.22);
+      box-shadow: 0 0 16px rgba(0,230,118,.2);
+    }
+    .btn-alert {
+      background: rgba(255,23,68,.12);
+      color: var(--danger); border: 1px solid rgba(255,23,68,.3);
+    }
+    .btn-alert:hover {
+      background: rgba(255,23,68,.22);
+      box-shadow: 0 0 16px rgba(255,23,68,.2);
+    }
+
+    /* Alert banner */
+    .alert-banner {
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      background: rgba(0,198,255,.08);
+      border: 1px solid rgba(0,198,255,.2);
+      color: var(--accent);
+      transition: all .3s;
+    }
+    .alert-banner.alert {
+      background: rgba(255,23,68,.1);
+      border-color: rgba(255,23,68,.4);
+      color: var(--danger);
+      animation: shake .4s;
+    }
+
+    @keyframes shake {
+      0%,100%{ transform: translateX(0); }
+      25%    { transform: translateX(-6px); }
+      75%    { transform: translateX(6px); }
+    }
+
+    /* Map */
+    .map-card { grid-column: span 1; }
+    .map-card iframe {
+      width: 100%; height: 210px;
+      border: none; border-radius: 8px;
+      filter: invert(90%) hue-rotate(175deg) saturate(0.8);
+      margin-top: 4px;
+    }
+
+    /* Log */
+    .log-card { grid-column: span 1; }
+    #log { list-style: none; max-height: 220px; overflow-y: auto; }
+    #log::-webkit-scrollbar { width: 4px; }
+    #log::-webkit-scrollbar-track { background: transparent; }
+    #log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .log-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      animation: fadeIn .3s ease;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      margin-top: 5px; flex-shrink: 0;
+    }
+    .log-time { color: var(--muted); font-size: 11px; min-width: 70px; }
+    .log-msg { color: var(--text); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Specs / info card */
+    .info-card { grid-column: span 1; }
+    .spec-row {
+      display: flex; justify-content: space-between;
+      align-items: center;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-key { color: var(--muted); }
+    .spec-val { color: var(--accent); font-weight: 600; letter-spacing: .5px; }
+
+    /* Span card */
+    .full-width { grid-column: span 3; }
+    @media(max-width: 900px) { .full-width { grid-column: span 2; } }
+    @media(max-width: 600px) { .full-width { grid-column: span 1; } }
+
+    /* Mini sensor bars */
+    .sensor-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    .sensor-item { text-align: center; }
+    .sensor-name {
+      font-size: 11px; letter-spacing: 1.5px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .sensor-val {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px; font-weight: 700; color: var(--accent);
+    }
+    .bar-wrap {
+      height: 4px; background: var(--border);
+      border-radius: 2px; margin-top: 6px;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width .5s ease;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login">
+  <div class="login-card">
+    <!-- LOGO placeholder — swap src for your PNG/SVG export of the EPS -->
+    <div class="login-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 4L6 12V24C6 33.94 13.94 43.36 24 46C34.06 43.36 42 33.94 42 24V12L24 4Z" fill="url(#sh1)" stroke="#00c6ff" stroke-width="1.2"/>
+        <path d="M16 27l3 3c.4.4 1 .4 1.4 0L29 21" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="14" y="22" width="20" height="9" rx="2" fill="none" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+        <path d="M30 19.5c0-3.31-2.69-6-6-6s-6 2.69-6 6" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.2"/>
+        <defs>
+          <linearGradient id="sh1" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#0d1f3c"/>
+            <stop offset="1" stop-color="#1a3a6e"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <span class="login-brand">VEHI·SHIELD</span>
+    </div>
+    <p class="login-subtitle">AI Vehicle Security System</p>
+
+    <div class="field-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username" autocomplete="off"/>
+    </div>
+    <div class="field-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password"/>
+    </div>
+    <button class="btn-login" onclick="login()">AUTHENTICATE</button>
+    <p id="error"></p>
+  </div>
+</div>
+
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <!-- Sidebar overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <p class="sidebar-section">Navigation</p>
+    <div class="nav-item active" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.25 3.77 10.17 9 11.36C18.23 23.17 22 18.25 22 13V7z"/></svg>
+      Security
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Activity Log
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Vehicle Location
+    </div>
+    <div class="sidebar-divider"></div>
+    <p class="sidebar-section">System</p>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M20 12h2M2 12h2M12 20v2M12 2v2"/></svg>
+      Settings
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Users
+    </div>
+    <div class="nav-item" onclick="setNav(this)">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Alerts
+    </div>
+    <div class="sidebar-footer">
+      v2.4.1 &nbsp;|&nbsp; © 2025 VehiShield Inc.
+    </div>
+  </nav>
+
+  <!-- Top Nav -->
+  <header class="topnav">
+    <div class="hamburger" id="hamburger" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+
+    <div class="nav-brand">
+      <div class="nav-logo">
+        <!-- LOGO — replace with <img src="your-logo.png"> once you export the EPS -->
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4L6 12V24C6 33.94 13.94 43.36 24 46C34.06 43.36 42 33.94 42 24V12L24 4Z" fill="url(#sh2)" stroke="#00c6ff" stroke-width="1.2"/>
+          <path d="M16 27l3 3c.4.4 1 .4 1.4 0L29 21" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="sh2" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0d2a5e"/>
+              <stop offset="1" stop-color="#1a4a8e"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="nav-title">VEHI·SHIELD  —  AI Vehicle Security System</span>
+    </div>
+
+    <div class="nav-right">
+      <div class="nav-status">
+        <div class="pulse" id="navPulse"></div>
+        <span id="navStatusText" style="color:var(--safe)">PROTECTED</span>
+      </div>
+      <div class="nav-time" id="clock">--:--:--</div>
+      <button class="btn-logout" onclick="logout()">LOG OUT</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <h2>Security Overview</h2>
+      <p>Real-time monitoring &nbsp;·&nbsp; Hyderabad, Telangana &nbsp;·&nbsp; Vehicle ID: VH-2024-TS09</p>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Uptime</div>
+        <div class="stat-value blue">14d 6h</div>
+        <span class="stat-badge neu">CONTINUOUS</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Events Today</div>
+        <div class="stat-value gold" id="eventsCount">0</div>
+        <span class="stat-badge neu" id="eventsLabel">NO EVENTS</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Threats Blocked</div>
+        <div class="stat-value green">12</div>
+        <span class="stat-badge up">THIS MONTH</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">System Health</div>
+        <div class="stat-value green">98%</div>
+        <span class="stat-badge up">ALL SYSTEMS GO</span>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid-main">
+
+      <!-- Status -->
+      <div class="card status-card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.25 3.77 10.17 9 11.36C18.23 23.17 22 18.25 22 13V7z"/></svg>
+          Security Status
+        </div>
+        <div class="big-status safe" id="bigStatus">SECURE</div>
+        <div class="status-desc" id="statusDesc">All perimeter sensors nominal</div>
+      </div>
+
+      <!-- Controls -->
+      <div class="card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M12 12v3"/></svg>
+          Access Controls
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-safe" onclick="markSafe()">✓ AUTHORIZE</button>
+          <button class="btn btn-alert" onclick="markAlert()">⚠ INTRUSION</button>
+        </div>
+      </div>
+
+      <!-- Alert -->
+      <div class="card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Last Alert
+        </div>
+        <div class="alert-banner" id="alertBanner">No active alerts — system nominal</div>
+      </div>
+
+      <!-- Map -->
+      <div class="card map-card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Vehicle Location
+        </div>
+        <iframe
+          src="https://maps.google.com/maps?q=17.3850,78.4867&z=15&output=embed"
+          loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+
+      <!-- Sensors -->
+      <div class="card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Live Sensors
+        </div>
+        <div class="sensor-grid">
+          <div class="sensor-item">
+            <div class="sensor-name">Motion</div>
+            <div class="sensor-val" id="s1">0%</div>
+            <div class="bar-wrap"><div class="bar-fill" id="b1" style="width:0%"></div></div>
+          </div>
+          <div class="sensor-item">
+            <div class="sensor-name">Door</div>
+            <div class="sensor-val" id="s2">0%</div>
+            <div class="bar-wrap"><div class="bar-fill" id="b2" style="width:0%"></div></div>
+          </div>
+          <div class="sensor-item">
+            <div class="sensor-name">GPS Lock</div>
+            <div class="sensor-val" id="s3">100%</div>
+            <div class="bar-wrap"><div class="bar-fill" id="b3" style="width:100%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicle Details -->
+      <div class="card info-card">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Vehicle Details
+        </div>
+        <div class="spec-row"><span class="spec-key">Vehicle ID</span><span class="spec-val">VH-2024-TS09</span></div>
+        <div class="spec-row"><span class="spec-key">Make / Model</span><span class="spec-val">Toyota Fortuner</span></div>
+        <div class="spec-row"><span class="spec-key">Owner</span><span class="spec-val">Admin User</span></div>
+        <div class="spec-row"><span class="spec-key">Protocol</span><span class="spec-val">AES-256 Encrypted</span></div>
+        <div class="spec-row"><span class="spec-key">Last Sync</span><span class="spec-val" id="lastSync">—</span></div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="card log-card full-width">
+        <div class="card-label">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Activity Log
+        </div>
+        <ul id="log"></ul>
+      </div>
+
+    </div><!-- /grid-main -->
+  </main>
+</div><!-- /app -->
+
+<script>
+  // ── CLOCK ──
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString();
+    document.getElementById('lastSync').textContent = now.toLocaleTimeString();
+  }
+  setInterval(tick, 1000); tick();
+
+  // ── SENSOR SIMULATION ──
+  function randomSensor() {
+    const v = Math.floor(Math.random()*15);
+    document.getElementById('s1').textContent = v + '%';
+    document.getElementById('b1').style.width = v + '%';
+    const d = Math.floor(Math.random()*8);
+    document.getElementById('s2').textContent = d + '%';
+    document.getElementById('b2').style.width = d + '%';
+  }
+  setInterval(randomSensor, 3000);
+
+  // ── LOGIN ──
+  function login() {
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+    if (u === 'admin' && p === '1234') {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      addLog('Admin logged in', 'blue');
+    } else {
+      document.getElementById('error').textContent = 'Invalid credentials. Try admin / 1234.';
+    }
+  }
+
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  function logout() {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('error').textContent = '';
+  }
+
+  // ── SIDEBAR ──
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+    document.getElementById('hamburger').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('hamburger').classList.remove('open');
+  }
+  function setNav(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    closeSidebar();
+  }
+
+  // ── STATUS ──
+  let eventCount = 0;
+
+  function markSafe() {
+    setStatus('SECURE','safe','All perimeter sensors nominal','PROTECTED',true,false);
+    document.getElementById('alertBanner').textContent = 'Authorized access confirmed';
+    document.getElementById('alertBanner').className = 'alert-banner';
+    addLog('Authorized access confirmed', 'green');
+  }
+
+  function markAlert() {
+    setStatus('INTRUSION DETECTED','danger','Unauthorized access — alert dispatched','ALERT',false,true);
+    document.getElementById('alertBanner').textContent = '🚨 Unauthorized access detected! Alert dispatched to owner.';
+    document.getElementById('alertBanner').className = 'alert-banner alert';
+    addLog('Intrusion detected — alert sent', 'red');
+    eventCount++;
+    document.getElementById('eventsCount').textContent = eventCount;
+    document.getElementById('eventsLabel').textContent = eventCount + ' EVENT' + (eventCount>1?'S':'');
+  }
+
+  function setStatus(label, cls, desc, navText, pulseGreen, pulseRed) {
+    const bs = document.getElementById('bigStatus');
+    bs.textContent = label; bs.className = 'big-status ' + cls;
+    document.getElementById('statusDesc').textContent = desc;
+    const np = document.getElementById('navPulse');
+    np.className = 'pulse' + (pulseRed ? ' alert' : '');
+    const nt = document.getElementById('navStatusText');
+    nt.textContent = navText;
+    nt.style.color = pulseRed ? 'var(--danger)' : 'var(--safe)';
+  }
+
+  // ── LOG ──
+  function addLog(msg, type) {
+    const ul = document.getElementById('log');
+    const li = document.createElement('li');
+    li.className = 'log-item';
+    const colors = { green: 'var(--safe)', red: 'var(--danger)', blue: 'var(--accent)' };
+    const col = colors[type] || 'var(--muted)';
+    li.innerHTML = `
+      <span class="log-dot" style="background:${col}"></span>
+      <span class="log-time">${new Date().toLocaleTimeString()}</span>
+      <span class="log-msg">${msg}</span>`;
+    ul.prepend(li);
+  }
+</script>
+</body>
+</html>
